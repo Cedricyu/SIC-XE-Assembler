@@ -1,0 +1,36 @@
+[0005FC] Read a line: label=[SUM], op=[START], operand=[5FF].
+[0005FF] Read a line: label=[], op=[], operand=[].
+[000602] Read a line: label=[FIRST], op=[STL], operand=[RETADR].
+[000605] Read a line: label=[], op=[], operand=[].
+[000608] Read a line: label=[], op=[LDX], operand=[ZERO].
+[00060B] Read a line: label=[], op=[], operand=[].
+[00060E] Read a line: label=[], op=[LDA], operand=[ZERO].
+[000611] Read a line: label=[], op=[], operand=[].
+[000614] Read a line: label=[LOOP], op=[ADD], operand=[TABLE,X].
+[000617] Read a line: label=[], op=[], operand=[].
+[00061A] Read a line: label=[], op=[LDX], operand=[TOTAL].
+[00061D] Read a line: label=[], op=[], operand=[].
+[000620] Read a line: label=[], op=[TIX], operand=[COUNT
+].
+[000623] Read a line: label=[], op=[], operand=[].
+[000626] Read a line: label=[], op=[JLT], operand=[LOOP].
+[000629] Read a line: label=[], op=[], operand=[].
+[00062C] Read a line: label=[], op=[STA], operand=[TOTAL].
+[00062F] Read a line: label=[], op=[], operand=[].
+[000632] Read a line: label=[], op=[RSUB], operand=[].
+[000635] Read a line: label=[], op=[], operand=[].
+[000638] Read a line: label=[RETADR], op=[RESW], operand=[1].
+[00063B] Read a line: label=[], op=[], operand=[].
+[00063E] Read a line: label=[TABLE], op=[RESW], operand=[200].
+[000896] Read a line: label=[], op=[], operand=[].
+[000899] Read a line: label=[COUNT], op=[RESW], operand=[1].
+[00089C] Read a line: label=[], op=[], operand=[].
+[00089F] Read a line: label=[T2], op=[BYTE], operand=[C'Hello World'].
+[0008AA] Read a line: label=[], op=[], operand=[].
+[0008AD] Read a line: label=[T3], op=[BYTE], operand=[X'0F'].
+[0008AE] Read a line: label=[], op=[], operand=[].
+[0008B1] Read a line: label=[ZERO], op=[WORD], operand=[0].
+[0008B4] Read a line: label=[], op=[], operand=[].
+[0008B7] Read a line: label=[TOTAL], op=[RESW], operand=[1].
+[0008BA] Read a line: label=[], op=[], operand=[].
+[0008BD] Read a line: label=[END], op=[FIRST], operand=[1].
