@@ -169,3 +169,14 @@ void print_object_list(){
         o_ptr = o_ptr->next;
     }
 }
+
+int is_format_two(const char *op) {
+    if (strcmp(op, "CLEAR") == 0) {
+        return 1;
+    }
+    size_t len = strlen(op);
+    if (len > 0 && op[len - 1] == 'R') {
+        return 1;
+    }
+    return 0;
+}

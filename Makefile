@@ -9,10 +9,11 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $^ -o $@
 
-%.o: %.c op.h sym_node.h
-	$(CC) $(CFLAGS) -c $< -o $@
+%.o: %.c %.h
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
+	@echo "Cleaning..."
+	rm -f *.o
 
 .PHONY: all clean

@@ -1,75 +1,4 @@
-#include "opcode.h"
-#include "sym_node.h"
-#include <fcntl.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <unistd.h>
-#include <stdarg.h>
-
-
-
-#define MAX_INPUT_LENGTH 200
-#define MAX_LABEL_LENGTH 40
-#define STR_LEN(start,end) ((char*)end - (char*)start + 1 )
-#define MOVE_TO_NEXT_WORD(cursor) \
-    while (*cursor == ' ' || *cursor == '\t') {      \
-        cursor++;                  \
-    }
-
-#define MOVE_TO_NEXT_SPACE(cursor) \
-    while (*cursor != ' ' && *cursor != '\t' && *cursor != '\0' && *cursor != ',') {  \
-        cursor++;                     \
-    }
-
-#define MOVE_TO_STRING_END(cursor)     \
-    cursor += 2;                       \
-    while (*cursor && *cursor != '\'') \
-    {                                  \
-        cursor++;                      \
-    }                                  \
-    cursor += 1;
-
-#define IS_LINE_EMPTY(line) ({ \
-    size_t len = strlen(line); \
-    int i; \
-    for (i = 0; i < len; i++) { \
-        if (!isspace((unsigned char)(line)[i])) { \
-            break; \
-        } \
-    } \
-    i == len; \
-})
-
-#define CHECK_NOT_EMPTY(line) \
-    do { \
-        if (IS_LINE_EMPTY(line)) { \
-            not_empty = 0; \
-            return 1; \
-        } \
-        not_empty = 1; \
-    } while (0)
-
-#define EXTRACT_operand1(cursor) \
-    while (*cursor != '\'')     \
-    {                           \
-        cursor++;               \
-    }                           \
-    cursor--;
-
-int isInteger(const char *str) {
-    if (str == NULL || *str == '\0') {
-        return 0; // Not an integer
-    }
-    while (*str != '\0') {
-        if (!isdigit(*str)) {
-            return 0; // Not an integer
-        }
-        str++;
-    }
-    return 1; // It's an integer
-}
-
-// #define DEBUG
+#include "asm.h"
 
 int start_loc = 0;
 int locctr = 0;
@@ -83,8 +12,7 @@ char op[MAX_LABEL_LENGTH];
 char operand1[MAX_LABEL_LENGTH];
 char operand2[MAX_LABEL_LENGTH];
 
-
-int hasLabel(const char *line) {
+int hasLabel(char *line) {
     char *c_ptr = line;
     MOVE_TO_NEXT_WORD(c_ptr);
     char *start = c_ptr;
@@ -96,20 +24,6 @@ int hasLabel(const char *line) {
         return 1;
     return 0;
 }
-
-#define MOVE_BASED_ON_CHAR(start, cursor) \
-    do { \
-        if ((*start == 'C' || *start == 'X') && *(start+1) == '\'' ) { \
-            MOVE_TO_STRING_END(cursor); \
-        } else { \
-            MOVE_TO_NEXT_SPACE(cursor); \
-        } \
-    } while (0)
-
-#define LINE_NOT_EMPTY not_empty
-
-#define CMP(x,y) (strcmp(x,y)==0)
-
 
 void ADD_LOCTR();
 
@@ -188,18 +102,6 @@ int readline(){
     return 1;
 }
 
-#define TEST_RES(x) do { \
-    if (x) { \
-        x = 0; \
-    } else { \
-        x = 1; \
-    } \
-} while (0)
-
-// #define ADD_DEBUG
-
-// Macro to decrease locctr by 3
-
 void ADD_LOCTR()
 {
     
@@ -221,7 +123,7 @@ void ADD_LOCTR()
     else if(CMP(op, D_BASE)) {
 
     }
-    else if(CMP(op, "CLEAR")||CMP(op, "COMPR")||CMP(op, "TIXR")){
+    else if(is_format_two(op)){
         locctr += 2;
     }
     else if (CMP(op, D_RESB))
@@ -271,6 +173,10 @@ void write_line(int fd,struct ObjectCode *obj){
     strcat(outputLine,op);
     strcat(outputLine,"\t");
     strcat(outputLine,operand1);
+    if(OPERAND_NOT_EMPTY(operand2)){
+        strcat(outputLine,",");
+        strcat(outputLine,operand2);
+    }
     if(obj){
         strcat(outputLine,"\t");
         char obj_str[9];
@@ -321,16 +227,6 @@ void pass_one() {
 }
 // #define PASS_TWO_DEBUG
 
-#define INIT_OBJECT_CODE(obj) \
-    do { \
-        (obj)->format = 0; \
-        (obj)->obj_code = 0; \
-        (obj)->byte_length = 1; \
-    } while(0)
-
-#define IS_INTEGER_WITH_HASH(operand1) (operand1[0] == '#' && isInteger(operand1 + 1))
-#define OPERAND_NOT_EMPTY(operand2) (operand2[0] != '\0')
-
 void pass_two() {
     //
     //  pass two
@@ -356,6 +252,7 @@ void pass_two() {
                 base = findSymbol(operand1);
             ///
             struct ObjectCode *obj = NULL;  /// initialize object node
+            size_t base_relative = 0;
             if (!(CMP(op, D_START) || CMP(op, D_RESW) || CMP(op, D_RESB) || CMP(op, D_WORD) || CMP(op, D_BASE) || CMP(op, D_END)))
             {
             obj = malloc(sizeof(struct ObjectCode));
@@ -399,26 +296,10 @@ void pass_two() {
             else{
 
                 init_op_code(obj,op);
-                if (CMP(op, "CLEAR") || CMP(op, "COMPR") || CMP(op, "TIXR")) {
-                    // Find the register numbers for operand1 and operand2
-                    size_t reg1 = find_register_no(operand1);
-                    size_t reg2 = find_register_no(operand2);
-
-                    if (reg1 == -1) {
-                        printf("\033[31m Register for operand1 not found \033[0m\n");
-                        init_registers(obj, 0);  // Default to register 0
-                    } else {
-                        init_registers(obj, reg1);
-                    }
-
-                    if (reg2 == -1) {
-                        printf("\033[31m Register for operand2 not found \033[0m\n");
-                        init_registers(obj, 0);  // Default to register 0
-                    } else {
-                        init_registers(obj, reg2);
-                    }
+                if (is_format_two(op)) { // format 2 object code
+                    obj->format = 2;
                 }
-                else{
+                else{ // format 3 object code
                 // n=0, i=0 ： SIC machine
                 // n=0, i=1 ： Immediate
                 // n=1, i=0 ： Indirect(間接)
@@ -446,7 +327,6 @@ void pass_two() {
                 /*
                     set registers
                 */
-                size_t base_relative = 0;
                 if ( abs(findSymbol(operand1) - pg_loc - 3) > 4096 ){
                     registers = 4;
                     base_relative = 1;
@@ -467,42 +347,69 @@ void pass_two() {
             #ifdef PASS_TWO_DEBUG
                 printf("operand1  = %s\n",operand1);
             #endif
-
+                
                 init_registers(obj, registers);
+                }
+                switch(obj->format){
+                    case 2:{
+                        size_t reg1 = find_register_no(operand1);
+                        size_t reg2 = find_register_no(operand2);
 
-                if(obj->format == 3){
-                    int s_v = findSymbol(operand1);
-                    // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
-                    if (s_v){
+                        if (reg1 == -1) {
+                            printf("\033[31m Register for operand1 not found \033[0m\n");
+                            init_registers(obj, 0);  // Default to register 0
+                        } else {
+                            init_registers(obj, reg1);
+                        }
+
+                        if (reg2 == -1) {
+                            printf("\033[31m Register for operand2 not found \033[0m\n");
+                            init_registers(obj, 0);  // Default to register 0
+                        } else {
+                            init_registers(obj, reg2);
+                        }
+                        break;
+                    }
+                    case 3:
+                    {
+                        int s_v = findSymbol(operand1);
+                        // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
+                        if (s_v){
                         if(base_relative)
                             init_disp(obj, s_v - base);
                         else
                             init_disp(obj, s_v - pg_loc - 3);
-                    }
-                    else if (operand1[0] == '#' && isInteger(operand1+1)){
+                        }
+                        else if (operand1[0] == '#' && isInteger(operand1+1)){
                         size_t immediate_addr = strtol(operand1+1, NULL, 10);
                         init_disp(obj, immediate_addr);
-                    }
-                    else if (operand1[0] == '\0')
+                        }
+                        else if (operand1[0] == '\0')
                         init_disp(obj, 0);
-                    else
+                        else
                         printf("\033[31m Symbol not found\033[0m\n");
-                }
-                else if(obj->format == 4){
-                    int s_v = findSymbol(operand1);
-                    // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
-                    if (s_v)
-                        init_disp4(obj, s_v);
-                    else if (operand1[0] == '#' && isInteger(operand1+1)){
-                        size_t immediate_addr = strtol(operand1+1, NULL, 10);
-                        init_disp4(obj, immediate_addr);
+                        break;
                     }
-                    else if (operand1[0] == '\0')
-                        init_disp4(obj, 0);
-                    else
-                        printf("\033[31m Symbol not found\033[0m\n");
+                    case 4:
+                    {
+                        int s_v = findSymbol(operand1);
+                        // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
+                        if (s_v)
+                            init_disp4(obj, s_v);
+                        else if (operand1[0] == '#' && isInteger(operand1 + 1))
+                        {
+                            size_t immediate_addr = strtol(operand1 + 1, NULL, 10);
+                            init_disp4(obj, immediate_addr);
+                        }
+                        else if (operand1[0] == '\0')
+                            init_disp4(obj, 0);
+                        else
+                            printf("\033[31m Symbol not found\033[0m\n");
+                    }
+                    default:
+                        break;
                 }
-                }
+                
             }
             printf("OBJECT CODE : [\033[32m%06X\033[0m]\n", obj->obj_code);
             insert_object_list(obj);
@@ -513,6 +420,3 @@ void pass_two() {
 
     close(fd);
 }
-
-
-

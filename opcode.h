@@ -73,4 +73,6 @@ static struct OBJECT_CODE_LIST ObjectCodeList = { .top = 0, .head=NULL, .tail=NU
 
 void insert_object_list(struct ObjectCode *o);
 
+int is_format_two(const char *op);
+
 #endif
