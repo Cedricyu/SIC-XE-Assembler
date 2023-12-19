@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "asm.h"
 #include <fcntl.h>
+#include <sys/stat.h>
+
 
 int pass_one();
 int pass_two();
