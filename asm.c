@@ -447,8 +447,6 @@ void generateObjectFile() {
         
         // Calculate hex_count and stop if format is 0
         while (hex_count < 0x1D && o_seek) {
-            hex_count += o_seek->format;
-            o_seek = o_seek->next;
             if (o_seek->format == 0) {
                 while (o_seek->format==0 && o_seek->next)
                 {
@@ -456,6 +454,8 @@ void generateObjectFile() {
                 }
                 break;
             }
+            hex_count += o_seek->format;
+            o_seek = o_seek->next;
         }
         printf("T%06X%02X", o_ptr->address, hex_count);
         while (o_ptr != o_seek) {

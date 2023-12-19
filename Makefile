@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -std=c11
+CFLAGS = -Wall -std=c11 -g
 SOURCES = main.c sym_node.c asm.c opcode.c
 OBJECTS = $(SOURCES:.c=.o)
 TARGET = asm
