@@ -83,4 +83,17 @@ void print_code(struct ObjectCode *o);
 
 void print_obj_code(struct ObjectCode *o_ptr);
 
+typedef struct MRecord {
+    unsigned int addr;          // Object number or starting address
+    unsigned int m_type;         // Modification type or length
+    struct MRecord* next;   // Pointer to the next MRecord
+} MRecord;
+
+extern MRecord *MRecordList;
+
+// Function to create a new MRecord and add it to the linked list
+MRecord *createMRecord(unsigned int objNo, unsigned int m_type);
+
+void addMRecord(unsigned int objNo, unsigned int m_type);
+
 #endif

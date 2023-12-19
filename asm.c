@@ -403,6 +403,8 @@ void pass_two() {
                 {
                     int s_v = findSymbol(operand1);
                     // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
+                    if(!IS_INTEGER_WITH_HASH(operand1))
+                        addMRecord(pg_loc, 5);
                     if (s_v)
                         init_disp4(obj, s_v);
                     else if (operand1[0] == '#' && isInteger(operand1 + 1))
@@ -467,5 +469,13 @@ void generateObjectFile() {
         }
         printf("\n");
     }
-}
 
+    MRecord *head = MRecordList;
+    while (head)
+    {
+        printf("M%06X%02X\n", head->addr+1, head->m_type);
+        head = head->next;
+    }
+
+    printf("E%06X\n", start_loc);
+}

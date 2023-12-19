@@ -18,5 +18,10 @@ int main(int argc, char *argv[]) {
     rewind(stdin);
     pass_two();
     //print_object_list();
+    const char* filename = "out.o";
+    fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    close(1);
+    dup(fd);
+    close(fd);
     generateObjectFile();
 }

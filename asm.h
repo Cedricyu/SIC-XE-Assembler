@@ -93,4 +93,5 @@ int isInteger(const char *str);
 #define IS_INTEGER_WITH_HASH(operand1) (operand1[0] == '#' && isInteger(operand1 + 1))
 #define OPERAND_NOT_EMPTY(operand2) (operand2[0] != '\0')
 
+
 #endif

@@ -221,3 +221,31 @@ void print_obj_code(struct ObjectCode *o_ptr){
     }
     printf("\033[0m]\n");
 }
+MRecord *MRecordList = NULL;
+
+MRecord* createMRecord(unsigned int addr, unsigned int m_type) {
+    MRecord* newRecord = (MRecord*)malloc(sizeof(MRecord));
+    if (newRecord != NULL) {
+        newRecord->addr = addr;
+        newRecord->m_type = m_type;
+        newRecord->next = NULL;
+    }
+    return newRecord;
+}
+
+
+void addMRecord(unsigned int objNo, unsigned int m_type) {
+    MRecord* newRecord = createMRecord(objNo, m_type);
+    if (newRecord == NULL) {
+        return;
+    }
+    if (MRecordList == NULL) {
+        MRecordList = newRecord;
+    } else {
+        MRecord* current = MRecordList;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = newRecord;
+    }
+}
