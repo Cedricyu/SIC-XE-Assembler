@@ -1,6 +1,9 @@
 #include "opcode.h"
 #include <stdio.h>
 #define INSTRUCTION_CNT sizeof(instructions) / sizeof(struct Instruction)
+
+struct OBJECT_CODE_LIST ObjectCodeList = { .top = 0, .head = NULL, .tail = NULL };
+ 
 static const struct Instruction instructions[] = {
     {"ADD", 0x18},
     {"ADDF", 0x58},
@@ -48,6 +51,14 @@ static const struct Instruction instructions[] = {
     {"TIXR", 0xB8},
     {"WD", 0xDC}
 };
+
+struct ObjectCode* createObjectCode(unsigned int address) {
+    struct ObjectCode* obj = (struct ObjectCode*)malloc(sizeof(struct ObjectCode));
+    if (obj != NULL) {
+        obj->address = address;
+    }
+    return obj;
+}
 
 int find_register_no(const char *c){
     for (size_t i = 0; i < sizeof(regs_list)/sizeof(char); i++)
@@ -161,8 +172,8 @@ void print_object_list(){
         size_t obj_count = o_ptr->byte_length;
         for (size_t i = 0; i < obj_count; i++)
         {
-            printf("%06X", o_ptr->obj_code);
-            if(i < obj_count -1)
+            print_code(o_ptr);
+            if (i < obj_count - 1)
                 o_ptr = o_ptr->next;
         }
         printf("]\n");
@@ -179,4 +190,34 @@ int is_format_two(const char *op) {
         return 1;
     }
     return 0;
+}
+
+void print_code(struct ObjectCode *o){
+    switch(o->format){
+        case 1:
+            printf("%02X", o->obj_code);
+            break;
+        case 2:
+            printf("%04X", o->obj_code);
+            break;
+        case 3:
+            printf("%06X", o->obj_code);
+            break;
+        case 4:
+            printf("%08X", o->obj_code);
+            break;
+    }
+    return;
+}
+
+void print_obj_code(struct ObjectCode *o_ptr){
+    printf("OBJECT CODE : [\033[32m");
+    size_t obj_count = o_ptr->byte_length;
+    for (size_t i = 0; i < obj_count; i++)
+    {
+        print_code(o_ptr);
+        if (i < obj_count - 1)
+            o_ptr = o_ptr->next;
+    }
+    printf("\033[0m]\n");
 }

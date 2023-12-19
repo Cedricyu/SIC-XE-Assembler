@@ -1,6 +1,7 @@
 #ifndef OP_H
 #define OP_H
 #include <string.h>
+#include <stdlib.h>
 
 #define D_NOTDR "NOTDR"
 #define D_START "START"
@@ -43,6 +44,7 @@ struct ObjectCode
     unsigned int format;
     unsigned int obj_code;
     unsigned int byte_length;
+    unsigned int address;
 
     struct ObjectCode *next;
 };
@@ -53,6 +55,8 @@ struct OBJECT_CODE_LIST
     struct ObjectCode *head;
     struct ObjectCode *tail;
 };
+
+struct ObjectCode *createObjectCode(unsigned int address);
 
 void init_op_code(struct ObjectCode *o, char *m);
 
@@ -69,10 +73,14 @@ int init_byte(struct ObjectCode *o, char c);
 
 void init_hex_byte(struct ObjectCode *o, int b);
 
-static struct OBJECT_CODE_LIST ObjectCodeList = { .top = 0, .head=NULL, .tail=NULL};
+extern struct OBJECT_CODE_LIST ObjectCodeList;
 
 void insert_object_list(struct ObjectCode *o);
 
 int is_format_two(const char *op);
+
+void print_code(struct ObjectCode *o);
+
+void print_obj_code(struct ObjectCode *o_ptr);
 
 #endif

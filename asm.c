@@ -6,11 +6,27 @@ int locctr = 0;
 int not_empty = 1;
 int pg_loc = 0;
 int base = 0;
+int print_line = 0;
+
+char program_name[MAX_LABEL_LENGTH];
 
 char label[MAX_LABEL_LENGTH];
 char op[MAX_LABEL_LENGTH];
 char operand1[MAX_LABEL_LENGTH];
 char operand2[MAX_LABEL_LENGTH];
+
+int isInteger(const char *str) {
+    if (str == NULL || *str == '\0') {
+        return 0; // Not an integer
+    }
+    while (*str != '\0') {
+        if (!isdigit(*str)) {
+            return 0; // Not an integer
+        }
+        str++;
+    }
+    return 1; // It's an integer
+}
 
 int hasLabel(char *line) {
     char *c_ptr = line;
@@ -109,10 +125,13 @@ void ADD_LOCTR()
     {
         // Set start_loc based on the operand1
         start_loc = strtol(operand1, NULL, 16);
+        strcpy(program_name, label);
+        strcpy(label, "");
     }
     // Print the line information
-    printf("[%06X] Read a line: label=[\033[33m%s\033[0m], op=[\033[33m%s\033[0m], operand1=[\033[33m%s\033[0m] operand2=[\033[33m%s\033[0m].\n",
-           locctr + start_loc, label, op, operand1, operand2);
+    if(print_line)
+        printf("[%06X] Read a line: label=[\033[33m%s\033[0m], op=[\033[33m%s\033[0m], operand1=[\033[33m%s\033[0m] operand2=[\033[33m%s\033[0m].\n",
+            locctr + start_loc, label, op, operand1, operand2);
     pg_loc = locctr + start_loc;
     // Process specific directives
 
@@ -231,6 +250,7 @@ void pass_two() {
     //
     //  pass two
     //
+    print_line = 1;
     const char *filename = "objcode.txt";
     int fd;
     start_loc = 0;
@@ -255,27 +275,29 @@ void pass_two() {
             size_t base_relative = 0;
             if (!(CMP(op, D_START) || CMP(op, D_RESW) || CMP(op, D_RESB) || CMP(op, D_WORD) || CMP(op, D_BASE) || CMP(op, D_END)))
             {
-            obj = malloc(sizeof(struct ObjectCode));
-            INIT_OBJECT_CODE(obj);
+                obj = createObjectCode(pg_loc);
+                INIT_OBJECT_CODE(obj);
 
-            if(CMP(op,"BYTE")){
-                char bytes[MAX_LABEL_LENGTH];
-                char *start = operand1 + 2;
-                char *end = operand1 + 2;
-                
-                if (operand1[0] == 'C')
+                if (CMP(op, "BYTE"))
                 {
-                    EXTRACT_operand1(end);
-                    strncpy(bytes, start, STR_LEN(start, end));
-                    bytes[STR_LEN(start, end)] = '\0';
-                    obj->byte_length = (STR_LEN(start, end)) / 4+ 1;
-                    for (; start <= end; start++)
+                    char bytes[MAX_LABEL_LENGTH];
+                    char *start = operand1 + 2;
+                    char *end = operand1 + 2;
+
+                    if (operand1[0] == 'C')
                     {
-                        while (!init_byte(obj,*start)){
-                            insert_object_list(obj);
-                            obj = malloc(sizeof(struct ObjectCode));
-                            INIT_OBJECT_CODE(obj);
-                        }
+                        EXTRACT_operand1(end);
+                        strncpy(bytes, start, STR_LEN(start, end));
+                        bytes[STR_LEN(start, end)] = '\0';
+                        obj->byte_length = (STR_LEN(start, end)) / 4 + 1;
+                        for (; start <= end; start++)
+                        {
+                            while (!init_byte(obj, *start))
+                            {
+                                insert_object_list(obj);
+                                obj = createObjectCode(pg_loc);
+                                INIT_OBJECT_CODE(obj);
+                            }
                     #ifdef PASS_TWO_DEBUG
                         printf("OBJECT CODE : [%06X]\n", obj->obj_code);
                     #endif
@@ -298,121 +320,113 @@ void pass_two() {
                 init_op_code(obj,op);
                 if (is_format_two(op)) { // format 2 object code
                     obj->format = 2;
+
+                    size_t reg1 = find_register_no(operand1);
+                    size_t reg2 = find_register_no(operand2);
+
+                    if (reg1 == -1) {
+                        printf("\033[31m Register for operand1 not found \033[0m\n");
+                        init_registers(obj, 0);  // Default to register 0
+                    } else {
+                        init_registers(obj, reg1);
+                    }
+
+                    if (reg2 == -1) {
+                        printf("\033[31m Register for operand2 not found \033[0m\n");
+                        init_registers(obj, 0);  // Default to register 0
+                    } else {
+                        init_registers(obj, reg2);
+                    }
                 }
                 else{ // format 3 object code
-                // n=0, i=0 ： SIC machine
-                // n=0, i=1 ： Immediate
-                // n=1, i=0 ： Indirect(間接)
-                // n=1, i=1 ： Simple
+                    size_t addr_mode;
+                    size_t registers;
 
-                // Immediate addressing modes：有#的
-                // Indirect addressing：有@的
-                // Extended instruction format：有+的
-                size_t addr_mode;
-                size_t registers = 0;
+                    char first = operand1[0];
+                    if (first == '#') {
+                        addr_mode = 1;  // Immediate addressing
+                    } else if (first == '@') {
+                        addr_mode = 2;  // Indirect addressing
+                    } else {
+                        addr_mode = 3;  // Simple addressing
+                    }
 
-                char first = operand1[0];
-                if (first == '#')
-                {
-                    addr_mode = 1;
-                }
-                else if(first == '@'){
-                    addr_mode = 2;
-                }
-                else{
-                    addr_mode = 3;
-                }
+                    init_address_mode(obj, addr_mode);
 
-                init_address_mode(obj, addr_mode);
-                /*
-                    set registers
-                */
-                if ( abs(findSymbol(operand1) - pg_loc - 3) > 4096 ){
-                    registers = 4;
-                    base_relative = 1;
-                }
-                else
-                    registers = 2;
+                    // Set registers
+                    if (abs(findSymbol(operand1) - pg_loc - 3) > 4096) {
+                        registers = 4;
+                        base_relative = 1;
+                    } else {
+                        registers = 2;
+                    }
 
-                if(OPERAND_NOT_EMPTY(operand2)){
-                    registers += 8;
-                }
-                else if(obj->format==4){
-                    registers = 1;
-                }
-                else if(IS_INTEGER_WITH_HASH(operand1)){
-                    registers = 0;
-                }
+                    if (OPERAND_NOT_EMPTY(operand2)) {
+                        registers += 8;
+                    } else if (obj->format == 4) {
+                        registers = 1;
+                    } else if (IS_INTEGER_WITH_HASH(operand1)) {
+                        registers = 0;
+                    }
 
-            #ifdef PASS_TWO_DEBUG
-                printf("operand1  = %s\n",operand1);
-            #endif
-                
+                #ifdef PASS_TWO_DEBUG
+                    printf("operand1 = %s\n", operand1);
+                #endif
+
                 init_registers(obj, registers);
+            }
+            switch(obj->format){
+                case 2:{
+                    break;
                 }
-                switch(obj->format){
-                    case 2:{
-                        size_t reg1 = find_register_no(operand1);
-                        size_t reg2 = find_register_no(operand2);
-
-                        if (reg1 == -1) {
-                            printf("\033[31m Register for operand1 not found \033[0m\n");
-                            init_registers(obj, 0);  // Default to register 0
-                        } else {
-                            init_registers(obj, reg1);
-                        }
-
-                        if (reg2 == -1) {
-                            printf("\033[31m Register for operand2 not found \033[0m\n");
-                            init_registers(obj, 0);  // Default to register 0
-                        } else {
-                            init_registers(obj, reg2);
-                        }
-                        break;
+                case 3:
+                {
+                    int s_v = findSymbol(operand1);
+                    // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
+                    if (s_v){
+                    if(base_relative)
+                        init_disp(obj, s_v - base);
+                    else
+                        init_disp(obj, s_v - pg_loc - 3);
                     }
-                    case 3:
+                    else if (operand1[0] == '#' && isInteger(operand1+1)){
+                    size_t immediate_addr = strtol(operand1+1, NULL, 10);
+                    init_disp(obj, immediate_addr);
+                    }
+                    else if (operand1[0] == '\0')
+                    init_disp(obj, 0);
+                    else
+                    printf("\033[31m Symbol not found\033[0m\n");
+                    break;
+                }
+                case 4:
+                {
+                    int s_v = findSymbol(operand1);
+                    // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
+                    if (s_v)
+                        init_disp4(obj, s_v);
+                    else if (operand1[0] == '#' && isInteger(operand1 + 1))
                     {
-                        int s_v = findSymbol(operand1);
-                        // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
-                        if (s_v){
-                        if(base_relative)
-                            init_disp(obj, s_v - base);
-                        else
-                            init_disp(obj, s_v - pg_loc - 3);
-                        }
-                        else if (operand1[0] == '#' && isInteger(operand1+1)){
-                        size_t immediate_addr = strtol(operand1+1, NULL, 10);
-                        init_disp(obj, immediate_addr);
-                        }
-                        else if (operand1[0] == '\0')
-                        init_disp(obj, 0);
-                        else
+                        size_t immediate_addr = strtol(operand1 + 1, NULL, 10);
+                        init_disp4(obj, immediate_addr);
+                    }
+                    else if (operand1[0] == '\0')
+                        init_disp4(obj, 0);
+                    else
                         printf("\033[31m Symbol not found\033[0m\n");
-                        break;
-                    }
-                    case 4:
-                    {
-                        int s_v = findSymbol(operand1);
-                        // printf("s_v [%d] pg_loc [%d] disp [%03X]\n",s_v,pg_loc,s_v - pg_loc);
-                        if (s_v)
-                            init_disp4(obj, s_v);
-                        else if (operand1[0] == '#' && isInteger(operand1 + 1))
-                        {
-                            size_t immediate_addr = strtol(operand1 + 1, NULL, 10);
-                            init_disp4(obj, immediate_addr);
-                        }
-                        else if (operand1[0] == '\0')
-                            init_disp4(obj, 0);
-                        else
-                            printf("\033[31m Symbol not found\033[0m\n");
-                    }
-                    default:
-                        break;
                 }
+                default:
+                    break;
+            }
                 
             }
-            printf("OBJECT CODE : [\033[32m%06X\033[0m]\n", obj->obj_code);
+            print_obj_code(obj);
             insert_object_list(obj);
+            }
+            else if(CMP(op, D_RESW)){
+                obj = createObjectCode(pg_loc);
+                INIT_OBJECT_CODE(obj);
+                insert_object_list(obj);
             }
             write_line(fd, obj);
         }
@@ -420,3 +434,38 @@ void pass_two() {
 
     close(fd);
 }
+
+void generateObjectFile() {
+    // print head record
+    printf("H%s %06X%06X\n", program_name, start_loc, pg_loc - start_loc);
+    
+    // end head record
+    struct ObjectCode *o_ptr = ObjectCodeList.head;
+    while (o_ptr) {
+        unsigned int hex_count = 0;
+        struct ObjectCode *o_seek = o_ptr;
+        
+        // Calculate hex_count and stop if format is 0
+        while (hex_count < 0x1D && o_seek) {
+            hex_count += o_seek->format;
+            o_seek = o_seek->next;
+            if (o_seek->format == 0) {
+                while (o_seek->format==0 && o_seek->next)
+                {
+                    o_seek = o_seek->next;
+                }
+                break;
+            }
+        }
+        printf("T%06X%02X", o_ptr->address, hex_count);
+        while (o_ptr != o_seek) {
+            print_code(o_ptr);
+            o_ptr = o_ptr->next;
+            if (!o_ptr) {
+                break;
+            }
+        }
+        printf("\n");
+    }
+}
+

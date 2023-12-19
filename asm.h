@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <assert.h>
 
 
 
@@ -58,19 +59,7 @@
     }                           \
     cursor--;
 
-int isInteger(const char *str) {
-    if (str == NULL || *str == '\0') {
-        return 0; // Not an integer
-    }
-    while (*str != '\0') {
-        if (!isdigit(*str)) {
-            return 0; // Not an integer
-        }
-        str++;
-    }
-    return 1; // It's an integer
-}
-
+int isInteger(const char *str);
 // #define DEBUG
 
 #define MOVE_BASED_ON_CHAR(start, cursor) \
