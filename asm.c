@@ -365,7 +365,7 @@ void pass_two() {
                         registers += 8;
                     } else if (obj->format == 4) {
                         registers = 1;
-                    } else if (IS_INTEGER_WITH_HASH(operand1)) {
+                    } else if (IS_INTEGER_WITH_HASH(operand1) || !OPERAND_NOT_EMPTY(operand1)) {
                         registers = 0;
                     }
 
