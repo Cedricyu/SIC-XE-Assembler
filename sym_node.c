@@ -39,19 +39,35 @@ int findSymbol(char *s) {
     return 0;
 }
 
-
 void printSymbolTable() {
-    printf("Symbol Table:\n");
-    printf("|---------|---------|\n");
-    printf("| %-7s | %-7s |\n", "Label", "Value");
-    printf("|---------|---------|\n");
+    const char *filename = "out.log";
+    int file = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (file == -1) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    // Save the current standard output file descriptor
+    int saved_stdout = dup(fileno(stdout));
 
+    // Redirect standard output to the file
+    if (dup2(file, fileno(stdout)) == -1) {
+        perror("Error redirecting stdout");
+        close(file);
+        exit(EXIT_FAILURE);
+    }
+    printf("Symbol\n");
+    printf("%-10s%-10s%10s  %-10s%-10s%-10s%-10s\n", "name", "hex", "dec", "scope", "kind", "type", "description");
     struct SymbolEntry *current = SYMBOL_TABLE.head;
 
     while (current != NULL) {
-        printf("| %-7s | %07X |\n", current->l, current->v);
+        // Print each symbol entry to the redirected stdout
+        printf("%-10s%010X%10d  %-10s%-10s%-10s%-10s\n",
+               current->l, current->v, current->v, "local", "relative", "data", "label");
         current = current->next;
     }
-    printf("|---------|---------|\n");
 
+    close(file);
+    dup2(saved_stdout, fileno(stdout));
+    close(saved_stdout);
 }
+

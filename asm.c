@@ -217,33 +217,22 @@ void pass_one() {
     //
     //  pass one
     //
-    const char *filename = "location.txt";
-    int fd;
-
-    fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-
-    if (fd == -1) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-
-    while (readline()){
+    printf("pass one...\n");
+    while (readline())
+    {
         if(LINE_NOT_EMPTY){
             ADD_LOCTR();
             if(findSymbol(label)){
-                printf("%s exist in symbol table\n", label);
+                // printf("%s exist in symbol table\n", label);
             }
             else if(label[0]!='\0'){
-                printf("insert %s into symbol table\n", label);
                 insertSymbol(label,pg_loc);
+                // printf("insert %s into symbol table\n", label);
             }
-            write_line(fd,NULL);
+            // write_line(fd,NULL);
         }
     }
-
     printSymbolTable();
-
-    close(fd);
 }
 // #define PASS_TWO_DEBUG
 
@@ -251,8 +240,8 @@ void pass_two() {
     //
     //  pass two
     //
-    print_line = 1;
-    const char *filename = "objcode.txt";
+    // print_line = 1;
+    const char *filename = "output.lst";
     int fd;
     start_loc = 0;
     locctr = 0;
@@ -326,14 +315,18 @@ void pass_two() {
                     size_t reg2 = find_register_no(operand2);
 
                     if (reg1 == -1) {
+                    #ifdef DEBUG
                         printf("\033[31m Register for operand1 not found \033[0m\n");
+                    #endif
                         init_registers(obj, 0);  // Default to register 0
                     } else {
                         init_registers(obj, reg1);
                     }
 
                     if (reg2 == -1) {
+                    #ifdef DEBUG
                         printf("\033[31m Register for operand2 not found \033[0m\n");
+                    #endif
                         init_registers(obj, 0);  // Default to register 0
                     } else {
                         init_registers(obj, reg2);
@@ -396,8 +389,10 @@ void pass_two() {
                     }
                     else if (operand1[0] == '\0')
                     init_disp(obj, 0);
+                    #ifdef DEBUG
                     else
                     printf("\033[31m Symbol not found\033[0m\n");
+                    #endif
                     break;
                 }
                 case 4:
@@ -416,14 +411,14 @@ void pass_two() {
                     else if (operand1[0] == '\0')
                         init_disp4(obj, 0);
                     else
-                        printf("\033[31m Symbol not found\033[0m\n");
+                        perror("\033[31m Symbol not found\033[0m\n");
                 }
                 default:
                     break;
             }
                 
             }
-            print_obj_code(obj);
+            // print_obj_code(obj);
             insert_object_list(obj);
             }
             else if(CMP(op, D_RESW)){
@@ -440,7 +435,7 @@ void pass_two() {
 
 void generateObjectFile() {
     // print head record
-    printf("H%s %06X%06X\n", program_name, start_loc, pg_loc - start_loc);
+    printf("H%s  %06X%06X\n", program_name, start_loc, pg_loc - start_loc);
     
     // end head record
     struct ObjectCode *o_ptr = ObjectCodeList.head;

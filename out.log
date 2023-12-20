@@ -1,0 +1,16 @@
+Symbol
+name      hex              dec  scope     kind      type      description
+FIRST     0000000000         0  local     relative  data      label     
+CLOOP     0000000006         6  local     relative  data      label     
+ENDFIL    000000001A        26  local     relative  data      label     
+EOF       000000002D        45  local     relative  data      label     
+RETADR    0000000030        48  local     relative  data      label     
+LENGTH    0000000033        51  local     relative  data      label     
+BUFFER    0000000036        54  local     relative  data      label     
+RDREC     0000001036      4150  local     relative  data      label     
+RLOOP     0000001040      4160  local     relative  data      label     
+EXIT      0000001056      4182  local     relative  data      label     
+INPUT     000000105C      4188  local     relative  data      label     
+WRREC     000000105D      4189  local     relative  data      label     
+WLOOP     0000001062      4194  local     relative  data      label     
+OUTPUT    0000001076      4214  local     relative  data      label     
