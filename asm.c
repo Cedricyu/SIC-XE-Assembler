@@ -36,7 +36,8 @@ int hasLabel(char *line) {
     c_ptr -= 1;
     char op_search[MAX_LABEL_LENGTH];
     strncpy(op_search, start, STR_LEN(start, c_ptr));
-    if(searchByMnemonic(op_search) == -1)
+    op_search[STR_LEN(start, c_ptr)] = '\0';
+    if (searchByMnemonic(op_search) == -1)
         return 1;
     return 0;
 }
